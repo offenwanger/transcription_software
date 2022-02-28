@@ -1,0 +1,101 @@
+<html lang="en">
+    <head>
+        <style>
+            .navbar {
+                overflow: hidden;
+                background-color: #333;
+                position: fixed; /* Set the navbar to fixed position */
+                top: 0; /* Position the navbar at the top of the page */
+                width: 100%; /* Full width */
+                height: 70px;
+            }
+            
+            /* Main content */
+            .main {
+                margin-top: 70px; /* Add a top margin to avoid content overlay */
+            }
+
+            audio {
+                padding: 10px;
+            }
+        </style>
+        <script>
+            document.addEventListener("keydown", function (e) { 
+                e = e || window.event;
+                let keyCode = e.keyCode || e.which;
+                let boundKeys = {left: 37, right: 39, space: 32, down: 40, backspace: 8 };
+
+                if (e.ctrlKey) {
+                    let player = document.getElementById("audioPlayer");
+                    if(keyCode == boundKeys.left) {
+                        e.preventDefault();
+                        player.currentTime -= 3;
+                    } else if(keyCode == boundKeys.right) {
+                        e.preventDefault();
+                        player.currentTime += 3;
+                    } else if(keyCode == boundKeys.space) {
+                        e.preventDefault();
+                        if(player.paused) {
+                            player.play();
+                        } else {
+                            player.pause();
+                        }
+                    } else if(keyCode == boundKeys.down) {
+                        e.preventDefault();
+
+                        let range = window.getSelection().getRangeAt(0);
+
+                        getSpansInRange(range).forEach(e => e.style.backgroundColor = null);
+                    } 
+                } 
+            });
+
+            function getNextNode(node) {
+                if (node.firstChild)
+                    return node.firstChild;
+                while (node)
+                {
+                    if (node.nextSibling)
+                        return node.nextSibling;
+                    node = node.parentNode;
+                }
+            }
+
+            function getSpansInRange(range) {
+                var start = range.startContainer;
+                var end = range.endContainer;
+                var commonAncestor = range.commonAncestorContainer;
+                var nodes = [];
+                var node;
+
+                // walk parent nodes from start to common ancestor
+                for (node = start.parentNode; node; node = node.parentNode) {
+                    console.log(node)
+                    nodes.push(node);
+                    if (node == commonAncestor)
+                        break;
+                }
+                nodes.reverse();
+
+                // walk children and siblings from start until end is found
+                for (node = start; node; node = getNextNode(node)) {
+                    console.log(node)
+                    nodes.push(node);
+                    if (node == end)
+                        break;
+                }
+                nodes = nodes.filter(e => e.tagName && e.tagName.toLowerCase() == "span");
+
+                return nodes;
+            }
+
+            function wordOnClick(time) {
+                const parsed = parseFloat(time);
+                if (isNaN(parsed)) { return; }
+                
+                document.getElementById("audioPlayer").currentTime = parsed;
+            }
+        </script>
+    </head>
+    <body>
+        <div class="navbar">
