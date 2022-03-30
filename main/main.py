@@ -65,10 +65,23 @@ def getSpeakerSig(filePath):
            
             if 'spk' in res:
                 spk_sig.append(res['spk'])
+    
+    if(len(spk_sig) == 0):
+        print("Error! vosk did not accept speaker text")
+        print("Increasing the quantity of audio can help (min 20s is advised)")
+        return np.array([])
 
     return np.mean(spk_sig, 0)
 
 def getSpeaker(spk, spk1Sig, spk2Sig):
+    if(spk1Sig.size == 0):
+        print("Error, bad speaker1")
+        return 0
+
+    if(spk2Sig.size == 0):
+        print("Error, bad speaker2")
+        return 0
+
     dist1 = cosine_dist(spk1Sig, spk)
     dist2 = cosine_dist(spk2Sig, spk)
     return 0 if dist1 < dist2 else 1
