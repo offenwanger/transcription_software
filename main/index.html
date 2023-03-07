@@ -63,6 +63,18 @@
                 } else if (keyCode == boundKeys.space) {
                     e.preventDefault();
                     if (player.paused) {
+                        let startTime;
+                        try {
+                            let range = window.getSelection().getRangeAt(0);
+                            let span = getSpansInRange(range)[0];
+                            if (!span.onclick) {
+                                span = getNextTimeNode(span);
+                            }
+                            let time = getTimeFromNode(span);
+                            document.getElementById("audioPlayer").currentTime = time;
+                        } catch (e) {
+                            console.error(e);
+                        }
                         player.play();
                     } else {
                         player.pause();
