@@ -1,101 +1,212 @@
 <html lang="en">
-    <head>
-        <style>
-            .navbar {
-                overflow: hidden;
-                background-color: #333;
-                position: fixed; /* Set the navbar to fixed position */
-                top: 0; /* Position the navbar at the top of the page */
-                width: 100%; /* Full width */
-                height: 70px;
-            }
-            
-            /* Main content */
-            .main {
-                margin-top: 70px; /* Add a top margin to avoid content overlay */
-            }
 
-            audio {
-                padding: 10px;
-            }
-        </style>
-        <script>
-            document.addEventListener("keydown", function (e) { 
-                e = e || window.event;
-                let keyCode = e.keyCode || e.which;
-                let boundKeys = {left: 37, right: 39, space: 32, down: 40, backspace: 8 };
+<head>
+    <style>
+        .navbar {
+            overflow: hidden;
+            background-color: #333;
+            position: fixed;
+            /* Set the navbar to fixed position */
+            top: 0;
+            /* Position the navbar at the top of the page */
+            width: 100%;
+            /* Full width */
+            height: 70px;
+        }
 
-                if (e.ctrlKey) {
-                    let player = document.getElementById("audioPlayer");
-                    if(keyCode == boundKeys.left) {
-                        e.preventDefault();
-                        player.currentTime -= 3;
-                    } else if(keyCode == boundKeys.right) {
-                        e.preventDefault();
-                        player.currentTime += 3;
-                    } else if(keyCode == boundKeys.space) {
-                        e.preventDefault();
-                        if(player.paused) {
-                            player.play();
-                        } else {
-                            player.pause();
-                        }
-                    } else if(keyCode == boundKeys.down) {
-                        e.preventDefault();
+        /* Main content */
+        .main {
+            margin-top: 70px;
+            /* Add a top margin to avoid content overlay */
+        }
 
-                        let range = window.getSelection().getRangeAt(0);
+        audio {
+            padding: 10px;
+        }
 
-                        getSpansInRange(range).forEach(e => e.style.backgroundColor = null);
-                    } 
-                } 
-            });
+        .reading {
+            font-weight: bold;
+        }
+    </style>
+    <script>
+        window.onload = function () {
+            document.getElementById("audioPlayer").onplay = function () {
+                startHighlightLoop();
+            };
 
-            function getNextNode(node) {
-                if (node.firstChild)
-                    return node.firstChild;
-                while (node)
-                {
-                    if (node.nextSibling)
-                        return node.nextSibling;
-                    node = node.parentNode;
+            document.getElementById("audioPlayer").onpause = function () {
+                stopHighlightLoop();
+            };
+        }
+
+        document.addEventListener("keydown", function (e) {
+            e = e || window.event;
+            let keyCode = e.keyCode || e.which;
+            let boundKeys = { left: 37, right: 39, space: 32, down: 40, backspace: 8 };
+
+            if (e.ctrlKey) {
+                let player = document.getElementById("audioPlayer");
+                if (keyCode == boundKeys.left) {
+                    e.preventDefault();
+                    player.currentTime -= 3;
+                    if (loopTimeout) {
+                        stopHighlightLoop();
+                        startHighlightLoop();
+                    }
+                } else if (keyCode == boundKeys.right) {
+                    e.preventDefault();
+                    player.currentTime += 3;
+                    if (loopTimeout) {
+                        stopHighlightLoop();
+                        startHighlightLoop();
+                    }
+                } else if (keyCode == boundKeys.space) {
+                    e.preventDefault();
+                    if (player.paused) {
+                        player.play();
+                    } else {
+                        player.pause();
+                    }
+                } else if (keyCode == boundKeys.down) {
+                    e.preventDefault();
+
+                    let range = window.getSelection().getRangeAt(0);
+
+                    getSpansInRange(range).forEach(e => e.style.backgroundColor = null);
                 }
             }
+        });
 
-            function getSpansInRange(range) {
-                var start = range.startContainer;
-                var end = range.endContainer;
-                var commonAncestor = range.commonAncestorContainer;
-                var nodes = [];
-                var node;
+        function getNextNode(node) {
+            if (node.firstChild)
+                return node.firstChild;
+            while (node) {
+                if (node.nextSibling)
+                    return node.nextSibling;
+                node = node.parentNode;
+            }
+        }
 
-                // walk parent nodes from start to common ancestor
-                for (node = start.parentNode; node; node = node.parentNode) {
-                    console.log(node)
-                    nodes.push(node);
-                    if (node == commonAncestor)
+        function getSpansInRange(range) {
+            var start = range.startContainer;
+            var end = range.endContainer;
+            var commonAncestor = range.commonAncestorContainer;
+            var nodes = [];
+            var node;
+
+            // walk parent nodes from start to common ancestor
+            for (node = start.parentNode; node; node = node.parentNode) {
+                nodes.push(node);
+                if (node == commonAncestor)
+                    break;
+            }
+            nodes.reverse();
+
+            // walk children and siblings from start until end is found
+            for (node = start; node; node = getNextNode(node)) {
+                nodes.push(node);
+                if (node == end)
+                    break;
+            }
+            nodes = nodes.filter(e => e.tagName && e.tagName.toLowerCase() == "span");
+
+            return nodes;
+        }
+
+        function wordOnClick(time) {
+            const parsed = parseFloat(time);
+            if (isNaN(parsed)) { return; }
+            if (loopTimeout) {
+                stopHighlightLoop();
+                startHighlightLoop();
+            }
+
+            document.getElementById("audioPlayer").currentTime = parsed;
+        }
+
+        let loopTimeout;
+        let currentNode;
+        function startHighlightLoop() {
+            try {
+                if (currentNode) currentNode.classList.remove("reading");
+            } catch (e) {
+                console.error(e);
+            }
+            try {
+                let playerTime = document.getElementById("audioPlayer").currentTime;
+                currentNode = document.querySelector('span');
+                let time;
+                if (currentNode.onclick) {
+                    time = getTimeFromNode(currentNode)
+                } else {
+                    time = -1000;
+                }
+                while (true) {
+                    if (Math.abs(getTimeFromNode(getNextTimeNode(currentNode)) - playerTime < Math.abs(time - playerTime))) {
+                        currentNode = getNextTimeNode(currentNode);
+                        time = getTimeFromNode(currentNode);
+                    } else {
                         break;
+                    }
                 }
-                nodes.reverse();
 
-                // walk children and siblings from start until end is found
-                for (node = start; node; node = getNextNode(node)) {
-                    console.log(node)
-                    nodes.push(node);
-                    if (node == end)
-                        break;
+                highlightLoop();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function getTimeFromNode(node) {
+            return parseFloat(node.onclick.toString().split("wordOnClick")[1].split("(")[1].split(")")[0]);
+        }
+
+        function getNextTimeNode(node) {
+            let next = getNextNode(node);
+            while (true) {
+                if (!next) break;
+                if (next.onclick) return next;
+                next = getNextNode(next);
+            }
+            return next;
+
+        }
+
+        function stopHighlightLoop() {
+            clearTimeout(loopTimeout);
+            loopTimeout = null;
+        }
+
+        function highlightLoop() {
+            try {
+                currentNode.classList.remove("reading");
+            } catch (e) {
+                console.error(e);
+            }
+            try {
+                currentNode = getNextTimeNode(currentNode);
+                if (!currentNode) return;
+                let timeoutTime;
+                let nextNode = getNextTimeNode(currentNode);
+                if (nextNode) {
+                    timeoutTime = getTimeFromNode(nextNode) - getTimeFromNode(currentNode);
+                } else {
+                    timeoutTime = 1;
                 }
-                nodes = nodes.filter(e => e.tagName && e.tagName.toLowerCase() == "span");
-
-                return nodes;
+                if (isNaN(parseInt(timeoutTime)) || timeoutTime < 0) {
+                    console.error(currentNode, nextNode);
+                    throw new Error("something went wrong with getting time")
+                }
+                currentNode.classList.add("reading");
+                loopTimeout = setTimeout(() => {
+                    highlightLoop();
+                }, timeoutTime * 1000);
+            } catch (e) {
+                console.error(e);
             }
 
-            function wordOnClick(time) {
-                const parsed = parseFloat(time);
-                if (isNaN(parsed)) { return; }
-                
-                document.getElementById("audioPlayer").currentTime = parsed;
-            }
-        </script>
-    </head>
-    <body>
-        <div class="navbar">
+        }
+    </script>
+</head>
+
+<body>
+    <div class="navbar">
