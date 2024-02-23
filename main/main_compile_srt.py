@@ -24,8 +24,8 @@ def main():
     speakerNames = pickle.load(speakerNamesFile)
     speakerNamesFile.close()
 
-    shutil.copyfile(constants.HTML_TEMPLATE_FILE, constants.HTML_OUTPUT_FILE)
-    file_object = open(constants.SRT_OUTPUT_FILE, 'w', encoding='utf-8')
+    shutil.copyfile(constants.HTML_TEMPLATE_FILE, constants.SRT_OUTPUT_FILE)
+    file_object = open(constants.SRT_OUTPUT_FILE, 'a', encoding='utf-8')
 
     file_object.write("<audio id = 'audioPlayer' controls src='" + os.path.basename(constants.FULL_AUDIO_FILE) +
                       "'> Your browser does not support the <code>audio</code> element. </audio></div>")

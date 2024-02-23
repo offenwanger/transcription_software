@@ -69,6 +69,8 @@ def main():
                         rowCopy.append(word["start"])
                         csvWriter.writerow(rowCopy)
                 csvFile.flush()
+
+                print("Parsed "+timetext, end="\r")
         csvFile.close()
     except Exception as error:
         print("Error, failed to vosk file")

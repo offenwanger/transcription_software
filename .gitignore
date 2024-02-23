@@ -6,3 +6,4 @@ main/vosk-model-fr-0.22.zip
 main/model_french
 main/output/*
 main/__pycache__/*
+main/input/*
