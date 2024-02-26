@@ -13,16 +13,16 @@ print('Converting MP4 and speaker timestamps to usable audio')
 main_convert.main()
 print('done')
 
+print('Whisper speech to text... (this is slow)')
+main_whisper.main()
+print('done')
+
 print("VOSKing for the speaker sigs")
 main_vosk_speaker_sigs.main()
 print('done')
 
 print("VOSKing for the speaker stamps... (this is slow)")
 main_vosk_text_parsing.main()
-print('done')
-
-print('Speech to text... (this is slow)')
-main_whisper.main()
 print('done')
 
 print("compiling the transcript")
